@@ -1,16 +1,16 @@
 <template>
   <div>
-    <home />
+    <guide />
   </div>
 </template>
 
 <script>
-import Home from '@/components/Home.vue'
+import Guide from '@/components/Guide.vue'
 
 export default {
-  name: 'HomeView',
+  name: 'GuideView',
   components: {
-    Home
+    Guide
   }
 }
 </script>
