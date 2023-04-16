@@ -24,7 +24,7 @@
                 <button class="login-container" type="button" data-bs-toggle="dropdown" aria-expanded="false" @click="setWindowWidth">
                     <img src="https://static-mh.content.disney.io/matterhorn/assets/starwars/navigation/SW_Oneid_User-85043c6786ab.svg" alt="">
                     <p>
-                        {{ loginText2 }}
+                        {{ loginText }}
                     </p>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-container">
@@ -110,7 +110,7 @@
                             </p>
                         </router-link>
                         <router-link class="nav-element" to="/historic" :class="[logedin ? '' : 'inactive-link',
-                        $route.name === 'game' ? 'nav-element-active' : '']">
+                        $route.name === 'historic' ? 'nav-element-active' : '']">
                             <p>
                                 Historic
                             </p>
@@ -261,7 +261,7 @@
             onAuthStateChanged(auth, async (user) => {
                 this.loginLogout(user);
                 if(user) {
-                    console.log(user)
+                    // console.log(user)
                     this.setUserId(user.uid);
                     this.setUserDataCompleted(user.state === "completed");
                     this.setUsername(user.username);
@@ -431,8 +431,6 @@
 }
 
 .dropdown-container > ul {
-    position: absolute;
-    right: 0;
     min-width: 100%;
     text-align: center;
     font-size: 1.2rem;

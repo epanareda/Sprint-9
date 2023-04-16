@@ -1,17 +1,22 @@
 <template>
-  <Header />
+  <Header v-if="!gameOn"/>
   <router-view :class="['content-container',
-  $route.name === 'profile' ? 'content-container-profile' : '']"/>
+  $route.name === 'profile' ? 'content-container-profile' : '',
+  gameOn ? 'my-0 p-0' : '']"/>
   <div class="background-gradient"></div>
 </template>
 
 <script>
-import Header from "@/components/Header.vue"
+import {mapGetters} from "vuex";
+import Header from "@/components/Header.vue";
 
 export default {
   components: {
     Header,
   },
+  computed: {
+    ...mapGetters(["gameOn"]),
+  }
 }
 </script>
 

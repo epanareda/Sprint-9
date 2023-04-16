@@ -11,7 +11,7 @@
         </div>
         <div>
             <p>
-                The blackjack here is played at a table of just 1 player and uses six 52-card decks, once the number of cards remaining in the deck are less than 70, it will be shuffled and start again. All number cards (2-10) score the value indicated on them. The face cards (Jack, Queen, King) score 10 points and Ace can either be treated as 1 or 11.
+                The blackjack here is played at a table of just 1 player and uses just one 52-card deck, for each game, it will be shuffled and start again. All number cards (2-10) score the value indicated on them. The face cards (Jack, Queen, King) score 10 points and Ace can either be treated as 1 or 11.
             </p>
             <p>
                 At the beginning of each round, the player place his/her bet. After the bet has been placed, the player is dealt two cards face-up in front of him/her. Then, the dealer receives two cards, one face-up and another face-down.

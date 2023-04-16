@@ -21,6 +21,11 @@ const routes = [
     component: GameView
   },
   {
+    path: "/historic",
+    name: "historic",
+    // component: HistoricView
+  },
+  {
     path: "/profile",
     name: "profile",
     component: ProfileView

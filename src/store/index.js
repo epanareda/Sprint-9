@@ -2,11 +2,16 @@ import { createStore } from 'vuex'
 
 export default createStore({
   state: {
+    // General stuff
     union: "*UNION*",
+
+    // Game
+    gameOn: "false",
     url: "https://deckofcardsapi.com/api/deck/",
     deckId: "ujhv6iu1lgiv",
     players: "",
 
+    // Login
     logedin: "false",
     uid: "",
     userDataCompleted: "false",
@@ -15,13 +20,20 @@ export default createStore({
   },
 
   getters: {
+    // General stuff
     union(state) {
       return state.union;
+    },
+
+    // Game
+    gameOn(state) {
+      return state.gameOn === "true" ? true : false;
     },
     getPlayers(state) {
       return state.players;
     },
 
+    // Login
     logedin(state) {
       return state.logedin === "true";
     },
@@ -40,12 +52,16 @@ export default createStore({
   },
 
   mutations: {
-    addPlayer(state, [name, bot=false]) {
+    // Game
+    setGameOn(state, value) {
+      state.gameOn = value === true ? "true" : "false";
+    },
+    addPlayer(state, [name, dealer=false]) {
       const player = JSON.stringify({
         name: name,
         cards: [],
         score: 0,
-        bot: bot
+        dealer: dealer
       });
       if(state.players === "") state.players = player;
       else {
@@ -55,6 +71,9 @@ export default createStore({
         ].join(state.union);
       }
       // console.log(state.players)
+    },
+    resetPlayers(state) {
+      state.players = "";
     },
     setDeckId(state, id) {
       state.deckId = id;
@@ -87,6 +106,7 @@ export default createStore({
       state.players = data.map(d => JSON.stringify(d)).join(state.union);
     },
 
+    // Login
     loginLogout(state, isLogedin) {
       state.logedin = isLogedin ? "true" : "false";
     },
@@ -105,8 +125,9 @@ export default createStore({
   },
 
   actions: {
+    // Game
     getNewDeck({state, commit}, ) {
-      fetch(`${state.url}new/shuffle/?deck_count=6`)
+      fetch(`${state.url}new/shuffle/?deck_count=1`)
         .then(response => response.json())
         .then(json => commit("setDeckId", json.deck_id))
         .catch(e => console.log(e));
@@ -119,7 +140,4 @@ export default createStore({
         .catch(e => console.log(e));
     }
   },
-
-  modules: {
-  }
 })
