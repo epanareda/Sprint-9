@@ -68,7 +68,7 @@
                                     <input class="modal-input" type="text" placeholder="johnny85" v-model="username">
                                 </form>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn casino-btn" @click="updatePersonalData">Save changes</button>
+                                    <button type="button" class="btn casino-btn" @click="updatePersonalData" :disabled="!informationValidable">Save changes</button>
                                 </div>
                             </div>
                         </div>
@@ -131,7 +131,7 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn casino-btn" @click="addCardToUserData">Save changes</button>
+                                    <button type="button" class="btn casino-btn" @click="addCardToUserData" :disabled="!cardValidable">Save changes</button>
                                 </div>
                             </div>
                         </div>
@@ -200,7 +200,7 @@
                                         </select>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn casino-btn" @click="addCredit">Save changes</button>
+                                        <button type="button" class="btn casino-btn" @click="addCredit" :disabled="!addCreditValidable">Save changes</button>
                                     </div>
                                 </div>
                             </div>
@@ -244,7 +244,7 @@
                                         </select>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn casino-btn" @click="extractCredit">Save changes</button>
+                                        <button type="button" class="btn casino-btn" @click="extractCredit" :disabled="!extractCreditValidable">Save changes</button>
                                     </div>
                                 </div>
                             </div>
@@ -314,7 +314,7 @@
                                         </select>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn casino-btn" @click="addPremium">Save changes</button>
+                                        <button type="button" class="btn casino-btn" @click="addPremium" :disabled="!becomePremiumValidable">Save changes</button>
                                     </div>
                                 </div>
                             </div>
@@ -341,7 +341,7 @@
                                         </div>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn casino-btn" @click="removePremiumSubscription">Save changes</button>
+                                        <button type="button" class="btn casino-btn" @click="removePremiumSubscription" :disabled="!removePremiumValidable">Save changes</button>
                                     </div>
                                 </div>
                             </div>
@@ -371,7 +371,7 @@
         data() {
             return {
                 // Gotten data
-                userData: "",
+                // userData: "",
 
                 // User personal data
                 name: "",
@@ -386,7 +386,7 @@
 
                 // Credit data
                 creditFromCard: "0",
-                cardToTakeCreditFrom: "aa",
+                cardToTakeCreditFrom: "",
                 creditToCard: "0",
                 cardToGiveCreditTo: "",
 
@@ -397,14 +397,47 @@
             }
         },
         computed: {
-            ...mapGetters(["uid"]),
+            ...mapGetters(["uid", "userData"]),
+            informationValidable() {
+                if(this.name === "" || this.name.length < 2) return false;
+                if(this.lastname === "" || this.lastname.length < 2) return false;
+                if(this.username === "" || this.username.length < 6) return false;
+                return true;
+            },
+            cardValidable() {
+                if(this.cardNumber === "" || this.cardNumber.length !== 19) return false;
+                if(this.cardHolder === "" || this.cardHolder.length < 4) return false;
+                if(this.cardExpirationDate === "" || this.cardExpirationDate.length !== 5) return false;
+                if(this.cardCVV === "" || this.cardCVV.length !== 3) return false;
+                return true;
+            },
+            addCreditValidable() {
+                if(this.creditFromCard === "0") return false;
+                if(this.cardToTakeCreditFrom === "") return false;
+                return true;
+            },
+            extractCreditValidable() {
+                if(Number(this.creditToCard) === 0) return false;
+                if(this.cardToGiveCreditTo === "") return false;
+                return true;
+            },
+            becomePremiumValidable() {
+                if(this.bePremium === "" || this.bePremium === false) return false;
+                if(this.premiumSubscriptionCard === "") return false;
+                return true;
+            },
+            removePremiumValidable() {
+                if(this.removePremium === "" || this.removePremium === false) return false;
+                return true;
+            },
         },
         methods: {
+            ...mapMutations(["setUserData"]),
             // Gotten data
-            async setUserData() {
+            setStoreUserData() {
                 if(this.uid !== "") {
-                    await getDoc(doc(collection(db, "users"), this.uid))
-                        .then(data => this.userData = data.data());
+                    getDoc(doc(collection(db, "users"), this.uid))
+                        .then(data => this.setUserData(data.data()));
                 }
             },
 
@@ -444,7 +477,7 @@
                         state: "completed"
                     })
                         .then(_ => {
-                            this.setUserData();
+                            this.setStoreUserData();
                         })
                 }
             },
@@ -484,7 +517,7 @@
                         })
                     })
                         .then(_ => {
-                            this.setUserData();
+                            this.setStoreUserData();
                         });
                 }
             },
@@ -493,7 +526,7 @@
                     cards: arrayRemove(card)
                 })
                     .then(_ => {
-                        this.setUserData();
+                        this.setStoreUserData();
                     });
             },
 
@@ -514,7 +547,7 @@
                         credit: Number(this.creditFromCard) + Number(this.userData.credit)
                     })
                         .then(_ => {
-                            this.setUserData();
+                            this.setStoreUserData();
                         });
                 }
             },
@@ -528,7 +561,7 @@
                         credit: Number(this.userData.credit) - Number(this.creditToCard)
                     })
                         .then(_ => {
-                            this.setUserData();
+                            this.setStoreUserData();
                         });
                 }
             },
@@ -546,7 +579,7 @@
                         premium: true
                     })
                         .then(_ => {
-                            this.setUserData();
+                            this.setStoreUserData();
                         });
                 }
             },
@@ -557,7 +590,7 @@
                         premium: false
                     })
                         .then(_ => {
-                            this.setUserData();
+                            this.setStoreUserData();
                         });
                 }
             },
@@ -567,13 +600,13 @@
             }
         },
         mounted() {
-            this.setUserData();
+            this.setStoreUserData();
         },
         watch: {
             // Gotten data
             uid() {
                 // console.log(this.uid);
-                this.setUserData();
+                this.setStoreUserData();
             },
 
             // User personal data

@@ -24,7 +24,7 @@
                 <button class="login-container" type="button" data-bs-toggle="dropdown" aria-expanded="false" @click="setWindowWidth">
                     <img src="https://static-mh.content.disney.io/matterhorn/assets/starwars/navigation/SW_Oneid_User-85043c6786ab.svg" alt="">
                     <p>
-                        {{ loginText }}
+                        {{ loginText2 }}
                     </p>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-container">
@@ -48,13 +48,21 @@
                                     Access an account
                                 </h1>
                             </div>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" @click="resetUserData"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" @click="() => {
+                                this.resetUserData();
+                                this.resetErrorText();
+                            }"></button>
                         </div>
-                        <form @submit.prevent="verify('login')" novalidate>
+                        <form @submit.prevent="() => {
+                            this.resetErrorText();
+                            this.verify('login');
+                        }" novalidate>
                             <p>email</p>
                             <input v-model="email" type="email">
+                            <p class="email-error-text hidden-text">{{ emailErrorTxt }}</p>
                             <p>password</p>
                             <input v-model="password" type="password">
+                            <p class="password-error-text hidden-text">{{ passwordErrorTxt }}</p>
                             <br><br>
                             <input class="btn casino-btn mt-4" type="submit" value="Login">
                         </form>
@@ -71,13 +79,21 @@
                                     Create an account
                                 </h1>
                             </div>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" @click="resetUserData"></button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" @click="() => {
+                                this.resetUserData();
+                                this.resetErrorText();
+                            }"></button>
                         </div>
-                        <form @submit.prevent="verify('register')" novalidate>
+                        <form @submit.prevent="() => {
+                            this.resetErrorText();
+                            verify('register')
+                        }" novalidate>
                             <p>email</p>
                             <input v-model="email" type="email">
+                            <p class="email-error-text hidden-text">{{ emailErrorTxt }}</p>
                             <p>password</p>
                             <input v-model="password" type="password">
+                            <p class="password-error-text hidden-text">{{ passwordErrorTxt }}</p>
                             <br><br>
                             <input class="btn casino-btn mt-4" type="submit" value="Register">
                         </form>
@@ -110,7 +126,7 @@
                             </p>
                         </router-link>
                         <router-link class="nav-element" to="/historic" :class="[logedin ? '' : 'inactive-link',
-                        $route.name === 'historic' ? 'nav-element-active' : '']">
+                        $route.name === 'historic' ? 'nav-element-active' : '']" v-if="userData.premium">
                             <p>
                                 Historic
                             </p>
@@ -138,50 +154,59 @@
         data() {
             return {
                 email: "",
+                emailErrorTxt: "",
                 password: "",
+                passwordErrorTxt: "",
+                // otherErrorTxt: "",
                 loginText: "",
                 windowWidth: "",
             }
         },
         computed: {
-            ...mapGetters(["logedin", "uid", "userDataCompleted", "username"]),
+            ...mapGetters(["logedin", "uid", "userData"]),
             loginText2() {
-                console.log(this.username)
                 if(this.uid !== "") {
-                    if(this.userDataCompleted === "completed") {
-                        return this.username;
-                    } else if(this.userDataCompleted === "uncompleted") {
+                    if(this.userData.state === "completed") {
+                        return this.userData.username;
+                    } else if(this.userData.state === "uncompleted") {
                         return "unknown";
                     }
                 } else return "offline";
             },
         },
         methods: {
-            ...mapMutations(["loginLogout", "setUserId", "setUserDataCompleted", "setUsername"]),
+            ...mapMutations(["loginLogout", "setUserId", "setUserData"]),
             verifyEmail(str) {
-                if(str.trim() !== str) return "error";
-                if(str.length > 30) return "error";
-                if(str.match(/^[A-z0-9]+@[a-z]+\.[a-z]+$/)) return "correct";
-                return "error";
+                if(!str || str === "") this.emailErrorTxt = "Email can not be empty";
+                else if(str.trim() !== str) this.emailErrorTxt = "Email can not have white spaces";
+                else if(str.length > 30) this.emailErrorTxt = "Email can not have more than 30 characters";
+                else if(str.match(/^[A-z0-9]{3,}@[a-z]+\.[a-z]+$/)) return "correct";
+                else this.emailErrorTxt = "Invalid email adress";
             },
             verifyPassword(str) {
-                if(str.trim() !== str) return "error";
-                if(str.length > 20 || str.length < 8) return "error";
-                if(str.match(/[!\?¡¿\*\^]/) &&
+                if(!str || str === "") this.passwordErrorTxt = "Password can not be empty";
+                else if(str.trim() !== str) this.passwordErrorTxt = "Password can only have spaces between words";
+                else if(str.length > 20 || str.length < 8) this.passwordErrorTxt = "Password has to have more than 8 or less than 20 characters";
+                else if(str.match(/[!\?¡¿\*\^]/) &&
                     str.match(/[0-9]/) &&
                     str.match(/[a-z]/) &&
                     str.match(/[A-Z]/)
                 ) return "correct";
-                return "error";
+                else this.passwordErrorTxt = "Password has to have lowercase and uppercase letters, numbers and special characters";
             },
             verify(type) {
                 const valid_email = this.verifyEmail(this.email);
                 const valid_password = this.verifyPassword(this.password);
-                if(valid_password === "error") console.log("Incorrect password");
+                // if(valid_password === "error") console.log("Incorrect password");
                 if(valid_email === "correct" && valid_password === "correct") {
                     if(type === "login") this.accessAccount();
                     else if(type === "register") this.createAccount();
                 }
+            },
+            resetErrorText() {
+                this.emailErrorTxt = "";
+                this.passwordErrorTxt = "";
+                // this.otherErrorTxt = "";
             },
             createAccount() {
                 createUserWithEmailAndPassword(auth, this.email, this.password)
@@ -205,10 +230,11 @@
                         const errorCode = error.code;
                         // const errorMessage = error.message;
                         if(errorCode === "auth/email-already-in-use") {
-                            console.log("This email has already an account");
+                            this.emailErrorTxt = "This email has already an account";
                         } else if(errorCode === "auth/invalid-email") {
-                            console.log("This email is not valid");
+                            this.emailErrorTxt = "This email is not valid";
                         } else {
+                            // this.otherErrorTxt = "Something strange happend, please try again";
                             console.log("Something strange happend, please try again");
                         }
                     });
@@ -225,12 +251,13 @@
                         const errorCode = error.code;
                         // const errorMessage = error.message;
                         if(errorCode === "auth/user-not-found") {
-                            console.log("This email doesn't exist");
+                            this.emailErrorTxt = "This email doesn't exist";
                         } else if(errorCode === "auth/invalid-email") {
-                            console.log("This email is not valid");
+                            this.emailErrorTxt = "This email is not valid";
                         } else if(errorCode === "auth/wrong-password") {
-                            console.log("Incorrect password");
+                            this.passwordErrorTxt = "Incorrect password";
                         } else {
+                            // this.otherErrorTxt = "Something strange happend, please try again";
                             console.log("Something strange happend, please try again");
                         }
                     });
@@ -247,9 +274,6 @@
                 this.email = "";
                 this.password = "";
             },
-            log(e) {
-                console.log(e);
-            },
 
             
             setWindowWidth() {
@@ -263,29 +287,33 @@
                 if(user) {
                     // console.log(user)
                     this.setUserId(user.uid);
-                    this.setUserDataCompleted(user.state === "completed");
-                    this.setUsername(user.username);
-                    let userData = await getDoc(doc(collection(db, "users"), this.uid));
-                    while(userData.data() === undefined && this.uid !== "") {
-                        console.log("solved");
-                        userData = await getDoc(doc(collection(db, "users"), this.uid));
-                    };
-                    if(this.uid !== "") {
-                        if(userData.data().state === "completed") {
-                            this.loginText = userData.data().username;
-                        } else {
-                            this.loginText = "unknown";
-                        }
-                    } else this.loginText = "offline";
+                    getDoc(doc(collection(db, "users"), this.uid))
+                        .then(data => this.setUserData(data.data()));
                 } else {
-                    this.loginText = "offline";
                     this.setUserId("");
-                    this.setUserDataCompleted(false);
-                    this.setUsername("");
+                    this.setUserData("");
                     if(this.$route.name === "profile") this.$router.push({name: "home"})
                 }
             });
         },
+        watch: {
+            emailErrorTxt(val) {
+                const elements = document.querySelectorAll(".email-error-text");
+                if(val !== "") {
+                    elements.forEach(e => e.classList.remove("hidden-text"));
+                } else {
+                    elements.forEach(e => e.classList.add("hidden-text"));
+                }
+            },
+            passwordErrorTxt(val) {
+                const elements = document.querySelectorAll(".password-error-text");
+                if(val !== "") {
+                    elements.forEach(e => e.classList.remove("hidden-text"));
+                } else {
+                    elements.forEach(e => e.classList.add("hidden-text"));
+                }
+            },
+        }
     }
 </script>
 
@@ -631,8 +659,21 @@ form > p {
     text-transform: capitalize;
 }
 
-form > input {
+/* form > input {
     margin-bottom: 1rem;
+} */
+
+.email-error-text,
+.password-error-text {
+    font-size: 0.8rem;
+    color: var(--second-color);
+    margin: 0;
+    margin-bottom: 1rem;
+    text-transform: initial;
+}
+
+.hidden-text {
+    visibility: hidden;
 }
 
 .casino-btn {
@@ -685,6 +726,22 @@ form > input {
         font-size: 1.25rem;
         text-transform: uppercase;
     }
+}
+
+@media screen and (max-width: 575.5px) {
+    .logo-container {
+        top: -20px;
+    }
+
+    .dropdown-container {
+        top: 140px;
+    }
+
+    .navbar-container {
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
 
     .nav-element:hover {
         box-shadow: 0rem 2px 0px -1px transparent;
@@ -706,22 +763,6 @@ form > input {
         color: var(--main-color);
         box-shadow: 0rem 10px 0.75rem 5px var(--main-color);
     }
-}
-
-@media screen and (max-width: 575.5px) {
-    .logo-container {
-        top: -20px;
-    }
-
-    .dropdown-container {
-        top: 140px;
-    }
-
-    .navbar-container {
-        flex-direction: column;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
 
     .header-container::after {
         content: "";
@@ -735,9 +776,14 @@ form > input {
     }
 }
 
-@media screen and (max-width: 450px) {
+@media screen and (max-width: 475px) {
     .dropdown-container > button > p {
         display: none;
+    }
+
+    form {
+        margin: 20px 10px;
+        margin-top: 0;
     }
 }
 </style>

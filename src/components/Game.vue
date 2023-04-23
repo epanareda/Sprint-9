@@ -26,11 +26,11 @@
                     <strong>IMPORTANT!</strong> Once you start the game you won’t be able to stop it or leave. If you refresh the page or close the browser you will lose your bet. Rounds are short, play them until the end. Make sure to have internet connection at all moment.
                 </p>
             </div>
-            <button class="play-btn casino-btn" @click="() => {
+
+            <button class="btn play-btn casino-btn" @click="() => {
                 openModal = true
                 setBetModal = true
-            }">
-            <!-- <button class="play-btn casino-btn" @click="setGameOn(true)"> -->
+            }" :class="[(userData.credit >= 2 && userData.state === 'completed') ? '' : 'casino-btn-disabled']">
                 <img src="https://oneidacasino.net/wp-content/uploads/2020/03/Blackjack.png" alt="">
                 <p>Let's play</p>
                 <img src="https://oneidacasino.net/wp-content/uploads/2020/03/Blackjack.png" alt="">
@@ -38,9 +38,17 @@
         </div>
         <div class="board-container" v-else>
             <div class="board" v-if="players !== ''">
+                <div class="game-info">
+                    <p>
+                        Credit: {{ userData.credit }} €
+                    </p>
+                    <p>
+                        {{ openModal ? "" : "Bet: " + bet + "€"}}
+                    </p>
+                </div>
                 <div class="buttons-container">
-                    <button class="btn casino-btn" @click="drawCards([0, 1])" :disabled="players[0].score >= 21 || playerStand">HIT</button>
-                    <button class="btn casino-btn" @click="playerStand = true" :disabled="players[0].score >= 21 || playerStand">STAND</button>
+                    <button class="btn casino-btn" @click="drawCards([0, 1])" :class="[(players[0].score >= 21 || playerStand) ? 'casino-btn-disabled' : '']">HIT</button>
+                    <button class="btn casino-btn" @click="playerStand = true" :class="[(players[0].score >= 21 || playerStand) ? 'casino-btn-disabled' : '']">STAND</button>
                 </div>
                 <div class="player" dealer="dealer">
                     <div class="player-border-right"></div>
@@ -50,13 +58,6 @@
                             DEALER
                         </p>
                     </div>
-                    <!-- <div class="score">
-                        <p>
-                            {{
-                                players[1].score
-                            }}
-                        </p>
-                    </div> -->
                     <div class="cards-container" :class="[hiddenCard ? 'has-hidden-cards' : '']">
                         <img v-for="(card, index) in players[1].cards" :key="index" :src="index === 1  && hiddenCard ? 'https://images.squarespace-cdn.com/content/v1/5abd8db4620b85fa99f15131/1542340370129-WV43BVUJLUTWL6FRRK52/Card+Back+2.0+-+Poker+Size+-+Red_shw.png' : card.image" :class="[index === 1 && hiddenCard ? 'hidden-card' : '']">
                     </div>
@@ -69,13 +70,6 @@
                             PLAYER
                         </p>
                     </div>
-                    <!-- <div class="score">
-                        <p>
-                            {{
-                                players[0].score
-                            }}
-                        </p>
-                    </div> -->
                     <div class="cards-container">
                         <img v-for="(card, index) in players[0].cards" :key="index" :src="card.image">
                     </div>
@@ -83,10 +77,10 @@
             </div>
         </div>
         <game-modal
-            :open-modal="openModal" @resetOpenModal="openModal = false"
-            :max-credit="'56'" :set-bet="setBetModal" :bet="bet" @setBet="setBet"
-            @startGame="startGame"
-            :result-modal="resultModal" :result-msg="resultModalMsg"
+            :open-modal="openModal" :closeModal="closeModal" @modalOpened="closeModal = false" @modalClosed="openModal = false"
+            :max-credit="userData.credit" :set-bet="setBetModal" :bet="bet" @setBet="setBet"
+            @startGame="startGame" :isRegame="isRegame"
+            :result-modal="resultModal" :result-msg="resultModalMsg" :reward="reward" :noCreditModal="noCreditModal"
             @goBack="goBack" @playAgain="playAgain"
         />
     </div>
@@ -96,6 +90,8 @@
 <script>
 import {mapGetters, mapMutations, mapActions} from "vuex";
 import GameModal from "@/components/GameModal.vue";
+import { db } from "@/firebase/index.js";
+import { doc, collection, getDoc, updateDoc, addDoc } from "firebase/firestore";
 
 export default {
     name: "Game",
@@ -105,21 +101,25 @@ export default {
     data() {
         return {
             // Game variables
+            matchID: "",
             playerStand: false,
             interval: "",
             gameOver: false,
+            reward: 0,
 
             // Modal options
             openModal: false,
+            closeModal: false,
             setBetModal: false,
-            bet: 0,
+            bet: 2,
+            isRegame: false,
             resultModal: false,
             resultModalMsg: "",
-
+            noCreditModal: false,
         }
     },
     computed: {
-        ...mapGetters(["union", "gameOn", "getPlayers"]),
+        ...mapGetters(["union", "uid", "userData", "gameOn", "getPlayers"]),
         players() {
             if(this.getPlayers === "") return "";
             else return this.fromStoreToObjArr(this.getPlayers);
@@ -135,40 +135,70 @@ export default {
         }
     },
     methods: {
-        ...mapMutations(["setGameOn", "addPlayer", "resetPlayers"]),
-        ...mapActions(["drawCards"]),
+        ...mapMutations(["setUserData", "setGameOn", "addPlayer", "resetPlayers"]),
+        ...mapActions(["getNewDeck", "shuffleDeck", "drawCards"]),
+        setStoreUserData() {
+            if(this.uid !== "") {
+                getDoc(doc(collection(db, "users"), this.uid))
+                    .then(data => this.setUserData(data.data()));
+            }
+        },
         resetModalDisplays() {
             this.setBetModal = false;
             this.resultModal = false;
             this.resultModalMsg = "";
         },
         setBet(val) {
-            this.bet = val;
+            this.bet = Number(val);
         },
         startGame() {
+            // Update user data
+            updateDoc(doc(collection(db, "users"), this.uid), {
+                credit: Number(this.userData.credit) - Number(this.bet)
+            })
+                .then(_ => {
+                    this.setStoreUserData();
+                });
+
+            // Create match data
+            addDoc(collection(db, "matches"), {
+                userID: this.uid,
+                username: this.userData.username,
+                bet: this.bet,
+                finish: false,
+                result: "-",
+                winings: "-",
+                date: Date.now(),
+                dateString: (new Date).toUTCString(),
+            })
+                .then(doc => this.matchID = doc.id);
+
             // Modal variables
-            this.openModal = true;
+            this.closeModal = true;
             this.setGameOn(true);
             this.resetModalDisplays();
+            this.reward = 0,
 
             // Store variables
-            fetch("https://deckofcardsapi.com/api/deck/ujhv6iu1lgiv/shuffle/");
+            this.shuffleDeck();
             this.resetPlayers();
             this.addPlayer(["John"]);
             this.addPlayer(["Dealer", true]);
-            this.drawCards([0, 2]);
-            this.drawCards([1, 2]);
+            setTimeout(() => this.drawCards([0, 2]), 500);
+            setTimeout(() => this.drawCards([1, 2]), 1000);
 
             // Data variables
             this.gameOver = false;
             this.playerStand = false;
         },
         playAgain() {
+            this.isRegame = true;
             this.resultModal = false;
             this.setBetModal = true;
         },
         goBack() {
-            this.openModal = true;
+            this.isRegame = false;
+            this.closeModal = true;
             this.setGameOn(false);
             this.resetModalDisplays();
         },
@@ -176,14 +206,10 @@ export default {
             if(str !== "") return str.split(this.union).map(s => JSON.parse(s));
         },
         dealersGame() {
-            if(this.players[1].score >= 17 ||
-                this.players[0].score === 21 && this.players[0].cards.length === 2) this.gameOver = true;
-            else {
-                let interval = setInterval(() => {
-                    this.drawCards([1, 1]);
-                }, 1000);
-                this.interval = interval;
-            }
+            let interval = setInterval(() => {
+                if(this.players[1].score < 17) this.drawCards([1, 1]);
+            }, 1000);
+            this.interval = interval;
         },
         results() {
             // Over 21 points scenarios
@@ -191,60 +217,96 @@ export default {
                 this.resultModalMsg = "Player loses";
             } else if(this.players[1].score > 21) {
                 this.resultModalMsg = "Player wins";
+                this.reward = this.bet * 2;
             }
             // Blackjack scenarios
             else if(this.players[0].score === 21 && this.players[0].cards.length == 2 ||
                     this.players[1].score === 21 && this.players[1].cards.length == 2) {
                 if(this.players[0].score > this.players[1].score) {
                     this.resultModalMsg = "Player wins with blackjack";
+                    this.reward = this.bet * 2.5;
                 } else if(this.players[0].score < this.players[1].score) {
                     this.resultModalMsg = "Player loses against blackjack";
                 } else if(this.players[0].score === this.players[1].score) {
                     if(this.players[1].cards.length > 2) {
                         this.resultModalMsg = "Player wins with blackjack";
+                        this.reward = this.bet * 2.5;
                     } else if(this.players[0].cards.length > 2) {
                         this.resultModalMsg = "Player loses against blackjack";
                     } else {
                         this.resultModalMsg = "It's a blackjack tie";
+                        this.reward = this.bet;
                     }
                 }
             }
             // Stand scenarios
             else if(this.players[0].score > this.players[1].score) {
                 this.resultModalMsg = "Player wins";
+                this.reward = this.bet * 2;
             } else if(this.players[0].score < this.players[1].score) {
                 this.resultModalMsg = "Player loses";
             } else if(this.players[0].score === this.players[1].score) {
                 this.resultModalMsg = "It's a tie";
+                this.reward = this.bet;
             }
+            // this.resultModalMsg = "Player wins with blackjack";
+            // this.reward = this.bet * 2.5;
+
             // Store
-            // UPDATE CREDIT IF WON OR TIE
-            // 
+            if(this.reward !== 0) {
+                updateDoc(doc(collection(db, "users"), this.uid), {
+                    credit: Number(this.userData.credit) + this.reward
+                })
+                    .then(_ => {
+                        this.setStoreUserData();
+                    });
+            };
+
+            // Update match data
+            updateDoc(doc(collection(db, "matches"), this.matchID), {
+                finish: true,
+                result: this.resultModalMsg,
+                winings: this.reward - this.bet,
+            });
+
             // Modal
+            this.bet = 2;
             this.resultModal = true;
             this.openModal = true;
         }
     },
     mounted() {
-        
+        this.getNewDeck();
     },
     watch: {
         dealersTurn(val) {
             // console.log(val);
-            if(val) this.dealersGame();
+            if(val && !this.gameOver) this.dealersGame();
+            if(this.players[1].score >= 17) this.gameOver = true;
         },
         players(val) {
-            if(val[0].score > 21) {
-                this.gameOver = true;
-            };
-            if(val[1].score >= 17 && this.dealersTurn) {
-                clearInterval(this.interval);
-                this.gameOver = true;
+            if(!this.gameOver) {
+                // console.log("score: " + val[1].score)
+                // console.log("turn: " + this.dealersTurn)
+                if(val[0].score > 21) {
+                    this.gameOver = true;
+                };
+                if(val[1].score >= 17 && this.dealersTurn) {
+                    clearInterval(this.interval);
+                    this.gameOver = true;
+                };
             };
         },
         gameOver(val) {
-            if(val === true) this.results();
-        }
+            if(val === true) {
+                clearInterval(this.interval);
+                this.results()
+            };
+        },
+        userData(val) {
+            if(val.credit < 2) this.noCreditModal = true;
+            else this.noCreditModal = false;
+        },
     }
 }
 </script>
@@ -257,6 +319,7 @@ export default {
     padding: 0.5rem;
     border-radius: 15px;
     margin: 2rem auto;
+    font-size: 1.2rem;
 }
 
 .play-btn > p {
@@ -290,6 +353,12 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+}
+
+.game-info {
+    position: fixed;
+    top: 30px;
+    left: 30px;
 }
 
 .buttons-container {
@@ -390,8 +459,11 @@ export default {
     opacity: 50%;
 }
 
-.casino-btn:disabled {
-    background: turquoise;
+.casino-btn-disabled,
+.casino-btn-disabled:hover,
+.casino-btn-disabled:active {
+    pointer-events: none;
+    background: turquoise !important;
     opacity: 25%;
 }
 
@@ -433,6 +505,10 @@ export default {
         --card-width: 50px;
     }
 
+    .play-btn {
+        font-size: 1.1rem;
+    }
+
     .play-btn > img {
         width: 75px;
     }
@@ -442,6 +518,12 @@ export default {
     .board {
         padding: 2rem 1rem;
         margin: 0 -1rem;
+    }
+    
+
+    .game-info {
+        top: 15px;
+        left: 15px;
     }
 }
 </style>

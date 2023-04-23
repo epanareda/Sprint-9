@@ -6,33 +6,48 @@
         <div class="modal fade" id="gameModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="gameModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-position">
                 <div class="modal-content modal-container">
-
-                    <!-- Bet modal -->
+                    <button id="modal-close-btn" type="button" class="btn-close btn-close-white none-display" data-bs-dismiss="modal" aria-label="Close" @click="$emit('modalClosed')"></button>
+                    
                     <div v-if="setBet">
-                        <div class="modal-header">
-                            <div class="modal-title-container">
-                                <img src="https://cdn-icons-png.flaticon.com/512/167/167969.png" alt="">
-                                <h1 class="modal-title modal-title-style fs-5" id="gameModalLabel">
-                                    Set your bet
-                                </h1>
+                        <!-- Bet modal -->
+                        <div v-if="!noCreditModal">
+                            <div class="modal-header">
+                                <div class="modal-title-container">
+                                    <img src="https://cdn-icons-png.flaticon.com/512/167/167969.png" alt="">
+                                    <h1 class="modal-title modal-title-style fs-5" id="gameModalLabel">
+                                        Set your bet
+                                    </h1>
+                                </div>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" @click="$emit('modalClosed')" v-if="!isRegame"></button>
                             </div>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="modal-p modal-info">
-                                Chose the bet you will put for the blackjack game you are about to play (2-500€ or your max credit).
-                            </p>
-                            <div class="bet-input-container modal-input">
-                                <increase-decrease-btn action="decrease" :isActive="credit > 2 ? false : true" @decrease="credit--"/>
-                                <input type="text" v-model="credit">
-                                <increase-decrease-btn action="increase" :isActive="Number(credit) < Number(maxCredit) ? false : true" @increase="credit++"/>
+                            <div class="modal-body">
+                                <p class="modal-p modal-info">
+                                    Chose the bet you will put for the blackjack game you are about to play (2-500€ or your max credit).
+                                </p>
+                                <div class="bet-input-container modal-input">
+                                    <increase-decrease-btn action="decrease" :isActive="credit > 2 ? false : true" @decrease="credit--"/>
+                                    <input type="text" v-model="credit">
+                                    <increase-decrease-btn action="increase" :isActive="Number(credit) < Number(maxCredit) ? false : true" @increase="credit++"/>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn casino-btn" @click="() => {
+                                    $emit('setBet', credit);
+                                    $emit('startGame');
+                                }">Start game</button>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn casino-btn" @click="() => {
-                                $emit('setBet', credit);
-                                $emit('startGame');
-                            }">Start game</button>
+
+                        <!-- No credit modal -->
+                        <div v-else>
+                            <div class="modal-body result-container">
+                                <p class="modal-p">
+                                    Your current credit is less than 2€, please add some on your profile to continue playing.
+                                </p>
+                            </div>
+                            <div class="modal-footer result-footer-btn-container">
+                                <button type="button" class="btn casino-btn" @click="$emit('goBack')">Go back</button>
+                            </div>
                         </div>
                     </div>
 
@@ -43,7 +58,7 @@
                                 {{ resultMsg }}.
                             </p>
                             <p class="modal-p" v-if="resultMsg.includes('win')">
-                            You won {{ reward }}€.
+                                You won {{ reward }}€.
                             </p>
                             <p class="modal-p" v-else-if="resultMsg.includes('lose')">
                                 You lost your bet.
@@ -57,6 +72,8 @@
                             <button type="button" class="btn casino-btn" @click="$emit('playAgain')">Play again</button>
                         </div>
                     </div>
+
+                    
                 </div>
             </div>
         </div>
@@ -71,25 +88,40 @@ export default {
     components: {
         IncreaseDecreaseBtn,
     },
-    props: ["openModal", "maxCredit", "setBet", "resultModal", "resultMsg"],
+    props: ["openModal", "closeModal", "maxCredit", "setBet", "bet", "isRegame", "resultModal", "resultMsg", "reward", "noCreditModal"],
     data() {
         return {
-            credit: 2,
+            credit: this.bet,
         }
     },
     watch: {
-        openModal() {
-            const btn = document.querySelector("#modal-btn");
-            btn.classList.remove("none-display");
-            btn.click();
-            btn.classList.add("none-display");
-            this.$emit("resetOpenModal");
+        openModal(val) {
+            if(val === true) {
+                const btn = document.querySelector("#modal-btn");
+                btn.classList.remove("none-display");
+                btn.click();
+                btn.classList.add("none-display");
+                this.$emit("modalOpened");
+            }
+        },
+        closeModal(val) {
+            if(val === true) {
+                const btn = document.querySelector("#modal-close-btn");
+                btn.classList.remove("none-display");
+                btn.click();
+                btn.classList.add("none-display");
+                this.$emit("modalClosed");
+            }
         },
         credit(val) {
             let credit = String(val).replace(/[^\d]|^0[^\d]|^0/, "");
             if(Number(credit) > Number(this.maxCredit)) credit = String(this.maxCredit);
+            if(Number(credit) > 500) credit = String(500);
             if(credit === "" || credit < 2) credit = "2";
             this.credit = credit;
+        },
+        bet(val) {
+            this.credit = val;
         },
     }
 }

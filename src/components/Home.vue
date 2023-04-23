@@ -28,17 +28,17 @@
                 <button class="link" @click="openLoginModal" v-else>
                     profile
                 </button>
-                section, that you will find in the login button as well. And finally, in the same
+                section. You will find it in the login button as well. And finally, in the same
                 <router-link class="link" to="/profile" v-if="logedin">
                     profile
                 </router-link>
                 <button class="link" @click="openLoginModal" v-else>
                     profile
                 </button>
-                section as well, you will have to add some credit into your account so you will be able to start the first bet, but first you will need a credit/debit card from where to take that money.
+                section, you will have to add some credit into your account so you will be able to start the first bet, but first you will need a credit/debit card from where to take that money.
             </p>
             <p>
-                Once the setup of your account is done, you will be prepared to start playing blackjack here in the Blackjack Casino!
+                Once the setup of your account is done, you will be ready to start playing blackjack here in the Blackjack Casino!
             </p>
             <p>
                 To know the rules used here to play blackjack, please check the <router-link class="link" to="/guide">

@@ -2,7 +2,8 @@
   <Header v-if="!gameOn"/>
   <router-view :class="['content-container',
   $route.name === 'profile' ? 'content-container-profile' : '',
-  gameOn ? 'my-0 p-0' : '']"/>
+  gameOn ? 'my-0 p-0' : '',
+  $route.name === 'historic' ? 'remove-content-container' : '']"/>
   <div class="background-gradient"></div>
 </template>
 
@@ -32,6 +33,11 @@ export default {
     margin: 50px 300px;
     font-size: 1.2rem;
     text-align: justify;
+}
+
+.remove-content-container {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 
 .background-gradient {

@@ -1,4 +1,4 @@
-import { createStore } from 'vuex'
+import { createStore } from 'vuex';
 
 export default createStore({
   state: {
@@ -8,15 +8,13 @@ export default createStore({
     // Game
     gameOn: "false",
     url: "https://deckofcardsapi.com/api/deck/",
-    deckId: "ujhv6iu1lgiv",
+    deckId: "",
     players: "",
 
     // Login
     logedin: "false",
     uid: "",
-    userDataCompleted: "false",
-    username: "",
-    userPremium: "false",
+    userData: "",
   },
 
   getters: {
@@ -40,14 +38,9 @@ export default createStore({
     uid(state) {
       return state.uid;
     },
-    userDataCompleted(state) {
-      return state.userDataCompleted === "true";
-    },
-    username(state) {
-      return state.username;
-    },
-    userPremium(state) {
-      return state.userPremium === "true";
+    userData(state) {
+      if(state.userData === "") return state.userData;
+      return JSON.parse(state.userData);
     },
   },
 
@@ -113,14 +106,9 @@ export default createStore({
     setUserId(state, id) {
       state.uid = id;
     },
-    setUserDataCompleted(state, isCompleted) {
-      state.userDataCompleted = String(isCompleted);
-    },
-    setUsername(state, username) {
-      state.username = username;
-    },
-    setUserPremium(state, isPremium) {
-      state.userPremium = String(isPremium);
+    setUserData(state, userData) {
+      if(userData === undefined) state.userData = "";
+      else state.userData = JSON.stringify(userData);
     },
   },
 
@@ -132,12 +120,16 @@ export default createStore({
         .then(json => commit("setDeckId", json.deck_id))
         .catch(e => console.log(e));
     },
+    shuffleDeck({state}, ) {
+      fetch(`${state.url}${state.deckId}/shuffle/`)
+        .catch(e => console.log(e));
+    },
     drawCards({state, commit}, [player, qtty]) {
       fetch(`${state.url}${state.deckId}/draw/?count=${qtty}`)
         .then(response => response.json())
         // .then(json => console.log(json.cards))
         .then(json => commit("getCards", [player, json.cards]))
         .catch(e => console.log(e));
-    }
+    },
   },
 })
